@@ -2,10 +2,10 @@
 ## Method 1: Using Python Application
 * Double click on the python application to run.
 * Run applications in the following order:
-    * python load_data.py
-    * python initial_analysis.py
-    * python statistical_analysis.py
-    * python subset_analysis.py
+    * load_data.py
+    * initial_analysis.py
+    * statistical_analysis.py
+    * subset_analysis.py
 
 ## Method 2: Using Terminal
 * Open the terminal.
