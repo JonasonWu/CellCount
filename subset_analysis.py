@@ -9,7 +9,7 @@ config = {
     "sample_type": "PBMC",
     "condition": "melanoma",
     "treatment": "miraclib",
-    "time_from_treatment_start": 0
+    "time_from_treatment_start": 0,
 }
 
 def query_builder(group_by: Literal["project", "response", "sex"]):
@@ -43,7 +43,27 @@ def print_results(cursor):
     results = cursor.fetchall()
     for result in results:
         print(f"For {headers[0]} of {result[0]}, the {headers[1]} is {result[1]}.")
-    
+
+
+def analysis1():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT AVG(b_cell) as 'average b_cell', AVG(cd8_t_cell) as 'average cd8_t_cell', 
+            AVG(cd4_t_cell) as 'average cd4_t_cell', AVG(nk_cell) as 'average nk_cell', AVG(monocyte) as 'average monocyte'
+        FROM samples samp
+        JOIN subjects sub on samp.subject_id = sub.subject_id 
+        WHERE sex = ? and time_from_treatment_start = ? and condition = ?
+        GROUP BY sex
+        """, ("M", 0, "melanoma"))
+    results = cursor.fetchone()
+    headers = [description[0] for description in cursor.description]
+    print("------------------------------------------")
+    print("Analyzing Melanoma males for responders at time=0")
+    for header, result in zip(headers, results):
+        print(f"For Melanoma males, the {header} for responders at time=0 is {result}")
+    print_results(cursor)
+    conn.close()
 
 def main():
     conn = sqlite3.connect(DB_FILE)
@@ -60,7 +80,11 @@ def main():
     query, parameters = query_builder(group_by="sex")
     cursor.execute(query, parameters)
     print_results(cursor)
+
     conn.close()
+
+    analysis1()
+
     input("Press Enter to complete...")
 
 if __name__ == "__main__":
