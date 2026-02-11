@@ -28,7 +28,7 @@
 * Performs an analysis of PBMC samples at baseline. Prints out the results on the terminal.
 
 # Database Design
-* The CSV has unique identifiers already, and SQLite doesn't seem to support uuid well, so it's better to just define the colums that can serve as primary keys.
+* The CSV has unique identifiers already, and SQLite doesn't seem to support uuid well, so it's better to just define the columns that can serve as primary keys.
 * The data was loaded into 3 tables: projects, subjects, samples.
     * projects
         * This table only has project_id, which is the primary key, collected as the project column in the csv.
