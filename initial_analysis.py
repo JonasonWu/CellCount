@@ -30,7 +30,7 @@ def compute_cell_frequencies(db_file=DB_FILE, allow_print=False, save_to_file=""
     # Fetch all cell counts from the database
     cursor.execute("""
         SELECT sample_id, b_cell, cd8_t_cell, cd4_t_cell, nk_cell, monocyte
-        FROM cell_counts
+        FROM samples
         ORDER BY sample_id
     """)
 

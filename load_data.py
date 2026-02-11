@@ -13,10 +13,10 @@ def print_sample_rows(db_file=DB_FILE, limit=10):
     tables = {
         "projects": "SELECT project_id FROM projects ORDER BY project_id LIMIT ?",
         "subjects": "SELECT subject_id, condition, age, sex, treatment, response, project_id FROM subjects ORDER BY subject_id LIMIT ?",
-        "cell_counts": """
+        "samples": """
             SELECT sample_id, sample_type, time_from_treatment_start,
                 b_cell, cd8_t_cell, cd4_t_cell, nk_cell, monocyte, subject_id
-            FROM cell_counts ORDER BY sample_id LIMIT ?
+            FROM samples ORDER BY sample_id LIMIT ?
         """
     }
 
@@ -37,7 +37,7 @@ def create_schema(conn):
     cursor = conn.cursor()
 
     cursor.executescript("""
-    DROP TABLE IF EXISTS cell_counts;
+    DROP TABLE IF EXISTS samples;
     DROP TABLE IF EXISTS subjects;
     DROP TABLE IF EXISTS projects;
 
@@ -56,7 +56,7 @@ def create_schema(conn):
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
     );
 
-    CREATE TABLE cell_counts (
+    CREATE TABLE samples (
         sample_id TEXT PRIMARY KEY,
         sample_type TEXT NOT NULL,
         time_from_treatment_start INTEGER NOT NULL,
@@ -119,7 +119,7 @@ def load_csv(conn):
             # Insert cell counts
             try:
                 cursor.execute("""
-                    INSERT INTO cell_counts (
+                    INSERT INTO samples (
                         sample_id, sample_type, time_from_treatment_start,
                         b_cell, cd8_t_cell, cd4_t_cell, nk_cell, monocyte, subject_id
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -131,7 +131,7 @@ def load_csv(conn):
                     int(row["monocyte"]), row["subject"], 
                 ))
             except sqlite3.IntegrityError as e:
-                print(f"Failed to insert cell_counts for sample {row['sample']}: {e} | Row data: {row}")
+                print(f"Failed to insert samples for sample {row['sample']}: {e} | Row data: {row}")
 
     conn.commit()
 
