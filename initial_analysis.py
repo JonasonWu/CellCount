@@ -36,7 +36,7 @@ def compute_cell_frequencies(db_file=DB_FILE, allow_print=False, save_to_file=""
 
     results = []
 
-    file_handle = open(save_to_file, "w") if save_to_file else None
+    file_handle = open(BASE_DIR / save_to_file, "w") if save_to_file else None
     header = f"{'sample':<12} {'total_count':<12} {'b_cell%':<10} {'cd8_t_cell%':<12} {'cd4_t_cell%':<12} {'nk_cell%':<10} {'monocyte%':<12}"
     if allow_print:
         print(header)
@@ -83,11 +83,16 @@ def compute_cell_frequencies(db_file=DB_FILE, allow_print=False, save_to_file=""
 
     
     conn.close()
+    if file_handle:
+        file_handle.close()
     return results
 
 if __name__ == "__main__":
     try:
-        compute_cell_frequencies(allow_print=False, save_to_file="relative_frequencies.txt")
+        allow_print = True if input("Do you want to print relative_frequencies on terminal? (y for yes, anything else means no): ") == "y" else False
+        compute_cell_frequencies(allow_print=allow_print, save_to_file="relative_frequencies.txt")
+        print("Cell Frequencies computed and written into relative_frequencies.txt file.")
+        input("Press Enter to End Task...")
     except Exception as e:
         print(f"{type(e)}: {e}")
         input("Press Enter to End task...")

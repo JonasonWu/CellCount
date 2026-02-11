@@ -16,4 +16,8 @@
 * Uses the data from the cell-count.csv and creates the cell_counts.db database.
 ## initial_analysis.py
 * Answers the question: What is the frequency of each cell type in each sample?
-* Displays a summary table of the relative frequkency of each cell population.
+* Displays a summary table of the relative frequency of each cell population.
+## statistical_analysis.py
+* Not completed.
+## subset_analysis.py
+* Performs an analysis of PBMC samples at baseline. Prints out the results on the terminal.
