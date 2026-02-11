@@ -12,14 +12,10 @@ def print_sample_rows(db_file=DB_FILE, limit=10):
 
     tables = {
         "projects": "SELECT project_id FROM projects ORDER BY project_id LIMIT ?",
-        "subjects": "SELECT subject_id, age, sex FROM subjects ORDER BY subject_id LIMIT ?",
-        "samples": """
-            SELECT sample_id, subject_id, project_id, condition, treatment, response,
-                sample_type, time_from_treatment_start
-            FROM samples ORDER BY sample_id LIMIT ?
-        """,
+        "subjects": "SELECT subject_id, condition, age, sex, treatment, response, project_id FROM subjects ORDER BY subject_id LIMIT ?",
         "cell_counts": """
-            SELECT sample_id, b_cell, cd8_t_cell, cd4_t_cell, nk_cell, monocyte
+            SELECT sample_id, sample_type, time_from_treatment_start,
+                b_cell, cd8_t_cell, cd4_t_cell, nk_cell, monocyte, subject_id
             FROM cell_counts ORDER BY sample_id LIMIT ?
         """
     }
@@ -42,7 +38,6 @@ def create_schema(conn):
 
     cursor.executescript("""
     DROP TABLE IF EXISTS cell_counts;
-    DROP TABLE IF EXISTS samples;
     DROP TABLE IF EXISTS subjects;
     DROP TABLE IF EXISTS projects;
 
@@ -52,31 +47,26 @@ def create_schema(conn):
 
     CREATE TABLE subjects (
         subject_id TEXT PRIMARY KEY,
-        age INTEGER NOT NULL,
-        sex TEXT NOT NULL CHECK (sex IN ('M', 'F'))
-    );
-
-    CREATE TABLE samples (
-        sample_id TEXT PRIMARY KEY,
-        subject_id TEXT NOT NULL,
-        project_id TEXT NOT NULL,
         condition TEXT NOT NULL,
+        age INTEGER NOT NULL,
+        sex TEXT NOT NULL CHECK (sex IN ('M', 'F')),
         treatment TEXT NOT NULL,
         response TEXT CHECK (response IN ('yes', 'no')) DEFAULT NULL,
-        sample_type TEXT NOT NULL,
-        time_from_treatment_start INTEGER NOT NULL,
-        FOREIGN KEY (subject_id) REFERENCES subjects(subject_id),
+        project_id TEXT NOT NULL,
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
     );
 
     CREATE TABLE cell_counts (
         sample_id TEXT PRIMARY KEY,
+        sample_type TEXT NOT NULL,
+        time_from_treatment_start INTEGER NOT NULL,
         b_cell INTEGER NOT NULL,
         cd8_t_cell INTEGER NOT NULL,
         cd4_t_cell INTEGER NOT NULL,
         nk_cell INTEGER NOT NULL,
         monocyte INTEGER NOT NULL,
-        FOREIGN KEY (sample_id) REFERENCES samples(sample_id)
+        subject_id TEXT NOT NULL,
+        FOREIGN KEY (subject_id) REFERENCES subjects(subject_id)
     );
     """)
     conn.commit()
@@ -94,25 +84,35 @@ def load_csv(conn):
                 INSERT OR IGNORE INTO projects (project_id) VALUES (?)
             """, (row["project"],))
 
-            cursor.execute("""
-                INSERT OR IGNORE INTO subjects (subject_id, age, sex) VALUES (?, ?, ?)
-            """, (row["subject"], int(row["age"]), row["sex"]))
-
             # Normalize response
             response = row["response"].strip() or None
 
-            # Insert sample
             try:
+                # Check if subject exists
                 cursor.execute("""
-                    INSERT INTO samples (
-                        sample_id, subject_id, project_id, condition, treatment,
-                        response, sample_type, time_from_treatment_start
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    row["sample"], row["subject"], row["project"], row["condition"],
-                    row["treatment"], response, row["sample_type"],
-                    int(row["time_from_treatment_start"])
-                ))
+                    SELECT subject_id, condition, age, sex, treatment, response, project_id
+                    FROM subjects WHERE subject_id = ?
+                """, (row["subject"],))
+                existing = cursor.fetchone()
+
+                if existing:
+                    # Compare existing data with new data
+                    existing_data = tuple(existing)
+                    new_data = (
+                        row["subject"], row["condition"], int(row["age"]), row["sex"], row["treatment"], response, row["project"], 
+                    )
+                    if existing_data != new_data:
+                        # Data differs -> raise exception
+                        raise Exception(f"Data Integrity Check Failed: \nData Row #1: {existing}.\nData Row #2: {new_data}")
+                else:
+                    # Subject does not exist -> insert
+                    cursor.execute("""
+                        INSERT INTO subjects (
+                            subject_id, condition, age, sex, treatment, response, project_id
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        row["subject"], row["condition"], int(row["age"]), row["sex"], row["treatment"], response, row["project"],
+                    ))
             except sqlite3.IntegrityError as e:
                 print(f"Failed to insert sample {row['sample']}: {e} | Row data: {row}")
 
@@ -120,11 +120,15 @@ def load_csv(conn):
             try:
                 cursor.execute("""
                     INSERT INTO cell_counts (
-                        sample_id, b_cell, cd8_t_cell, cd4_t_cell, nk_cell, monocyte
-                    ) VALUES (?, ?, ?, ?, ?, ?)
+                        sample_id, sample_type, time_from_treatment_start,
+                        b_cell, cd8_t_cell, cd4_t_cell, nk_cell, monocyte, subject_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    row["sample"], int(row["b_cell"]), int(row["cd8_t_cell"]),
-                    int(row["cd4_t_cell"]), int(row["nk_cell"]), int(row["monocyte"])
+                    row["sample"], row["sample_type"],
+                    int(row["time_from_treatment_start"]),
+                    int(row["b_cell"]), int(row["cd8_t_cell"]),
+                    int(row["cd4_t_cell"]), int(row["nk_cell"]), 
+                    int(row["monocyte"]), row["subject"], 
                 ))
             except sqlite3.IntegrityError as e:
                 print(f"Failed to insert cell_counts for sample {row['sample']}: {e} | Row data: {row}")
