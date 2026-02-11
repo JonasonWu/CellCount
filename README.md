@@ -46,6 +46,6 @@
         * This table records every sample collected from subjects.
         * Each row should represent a sample collected from a subject.
         * Defines all specific attributes relating to the sample, like sample_type, time_from_treatment_start, cell counts, and subject_id.
-        * Note: Even though it seems that sample_type is the same based on the project, but I still believe it's best to include sample_type in the samples table. sample_type should be specific to the sample, not the project. There is no rule stating that a single project should only take in one type of sample.
+        * Note: Even though it seems that sample_type is the same based on the project, I still believe it's best to include sample_type in the samples table. sample_type should be specific to the sample, not the project. There is no rule stating that a single project should only take in one type of sample.
         * The time_from_treatment_start column is indexed to allow for future expansion. Maybe future projects may use other time intervals for the project, so indexing would be helpful.
         
