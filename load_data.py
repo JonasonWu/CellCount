@@ -68,6 +68,11 @@ def create_schema(conn):
         subject_id TEXT NOT NULL,
         FOREIGN KEY (subject_id) REFERENCES subjects(subject_id)
     );
+                         
+    CREATE INDEX idx_time_from_treatment_start ON samples(time_from_treatment_start);
+    CREATE INDEX idx_fk_subject_id ON samples(subject_id);
+    CREATE INDEX idx_treatment ON subjects(treatment); 
+
     """)
     conn.commit()
 
